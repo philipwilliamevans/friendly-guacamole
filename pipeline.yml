@@ -1,0 +1,91 @@
+resources: 
+- name: animated-spork
+  type: git
+  icon: github-circle
+  source:
+    uri: https://github.com/philipwilliamevans/animated-spork.git
+    branch: master
+
+- name: docker-build-tools
+  type: git
+  icon: github-circle
+  source:
+    uri: https://github.com/philipwilliamevans/docker-build-tools.git
+    branch: master
+
+- name: animated-spork-docker-image
+  type: docker-image
+  icon: docker
+  source:
+    username: philiam
+    password: fs*Nrh+9yMQwGgWjV]cah?WzJT;bAV
+    repository: philiam/animated-spork
+
+- name: docker-build-tools-image
+  type: docker-image
+  icon: docker
+  source:
+    username: philiam
+    password: fs*Nrh+9yMQwGgWjV]cah?WzJT;bAV
+    repository: philiam/docker-build-tools
+    
+jobs:
+- name: publish
+  public: true
+  serial: false
+  plan:
+  - get: docker-build-tools
+    trigger: true
+  - put: docker-build-tools-image
+    params:
+      build: docker-build-tools
+
+- name: build-and-push
+  public: true
+  serial: false
+  plan:
+  - get: animated-spork
+    trigger: true
+  - get: docker-build-tools-image
+    trigger: true
+    passed: [publish]
+  - task: build-java
+    config:
+      platform: linux
+
+      image_resource:
+        type: docker-image
+        source: {repository: java, tag: openjdk-8}
+
+      inputs:
+      - name: animated-spork
+
+      outputs:
+      - name: jar-files
+
+      run:
+        path: animated-spork/build.sh
+
+  - task: build-docker
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: philiam/docker-build-tools
+
+      # outputs:
+      # - name: workspace
+      inputs:
+      - name: jar-files
+
+      run:
+        path: /bin/sh
+        args:
+        - -c
+        - |
+          ls jar-files
+
+  - put: animated-spork-docker-image
+    params:
+      build: jar-files
