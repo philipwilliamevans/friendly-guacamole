@@ -1,0 +1,16 @@
+version: '2'
+services:
+  proxy:
+    build: ./
+    networks:
+      - phil_network
+    ports:
+    # - 80:80
+    # - 443:443
+    - 5000:5000
+    - 6000:6000
+
+networks:
+  phil_network:
+    external:
+      name: phil_network_default
